@@ -1,0 +1,23 @@
+apiVersion: operator.domino.ai/v1beta1
+kind: Domino
+metadata:
+  name: domino
+  namespace: domino
+spec:
+  clusterId: domino-cluster
+  version: "6.0.3"
+  interval: 5m
+  agent:
+    spec:
+      repository: quay.io/domino/agent
+      version: "6.0.3"
+  config: |
+    name: domino-cluster
+    version: 6.0.3
+    license:
+      accept: true
+    cloud: aws
+    aws:
+      region: us-east-1
+    ingress:
+      enabled: true

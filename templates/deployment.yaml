@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "common.labels.component" "platform-operator" | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "common.labels.selector" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.metrics.enabled }}
+        prometheus.io/port: "{{ .Values.metrics.port }}"
+        prometheus.io/scrape: "true"
+        {{- end }}
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+        {{- with .Values.podAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "common.labels.standard" . | nindent 8 }}
+        {{- include "common.labels.component" "platform-operator" | nindent 8 }}
+        {{- with .Values.podLabels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: manager
+        image: {{ include "common.imagename" .Values.image }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - --watch-all-namespaces
+        - --log-level=info
+        - --log-encoding=json
+        - --job-priority-class={{ .Values.priorityClassName }}
+        {{- if gt (int .Values.replicaCount) 1 }}
+        - --enable-leader-election
+        {{- end }}
+        env:
+        - name: RUNTIME_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        {{- if not .Values.webhook.enabled }}
+        - name: ENABLE_WEBHOOKS
+          value: "false"
+        {{- end }}
+        {{- with .Values.podEnv }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: healthz
+          initialDelaySeconds: 10
+        ports:
+        {{- if .Values.webhook.enabled }}
+        - containerPort: {{ .Values.webhook.port }}
+          name: webhook-server
+          protocol: TCP
+        {{- end }}
+        - containerPort: {{ .Values.metrics.port }}
+          name: http-prom
+          protocol: TCP
+        - containerPort: {{ .Values.healthCheckPort }}
+          name: healthz
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: healthz
+          initialDelaySeconds: 5
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        volumeMounts:
+        {{- if .Values.webhook.enabled }}
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+        {{- end }}
+        - mountPath: /tmp
+          name: temp
+        {{- with .Values.extraVolumeMounts }}
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      imagePullSecrets:
+      - name: {{ .Values.image.pullSecret }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: {{ include "po.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 600
+      volumes:
+      {{- if .Values.webhook.enabled }}
+      - name: cert
+        secret:
+          secretName: {{ include "po.webhook.secret" . }}
+      {{- end }}
+      - emptyDir: {}
+        name: temp
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}

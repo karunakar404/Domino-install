@@ -1,0 +1,15 @@
+global:
+  environment: dev
+  cloud: aws
+  aws:
+    region: us-east-1
+
+ingress:
+  enabled: true
+
+license:
+  accept: true
+
+agent:
+  repository: quay.io/domino/agent
+  version: "6.0.3"

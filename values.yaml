@@ -1,0 +1,15 @@
+global:
+  environment: dev
+  cloud: aws
+  aws:
+    region: us-east-1
+
+ingress:
+  enabled: true
+
+license:
+  accept: true
+
+image:
+  repository: quay.io/domino/platform-operator
+  tag: "0.4.4"

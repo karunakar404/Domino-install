@@ -1,0 +1,29 @@
+{{- if and .Values.webhook.enabled .Values.webhook.certManager }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "po.certmanager.selfSignedCert" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "common.labels.component" "platform-operator" | nindent 4 }}
+spec:
+  dnsNames:
+  - {{ include "po.webhook.service" . }}.{{ .Release.Namespace }}.svc
+  - {{ include "po.webhook.service" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
+  issuerRef:
+    kind: Issuer
+    name: {{ include "po.certmanager.selfSignedIssuer" . }}
+  secretName: {{ include "po.webhook.secret" . }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "po.certmanager.selfSignedIssuer" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "common.labels.component" "platform-operator" | nindent 4 }}
+spec:
+  selfSigned: {}
+{{- end }}

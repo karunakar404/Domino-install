@@ -1,0 +1,17 @@
+{{- if .Values.webhook.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "po.webhook.service" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "common.labels.component" "platform-operator" | nindent 4 }}
+spec:
+  ports:
+  - port: 443
+    targetPort: webhook-server
+    protocol: TCP
+  selector:
+    {{- include "common.labels.selector" . | nindent 4 }}
+{{- end }}

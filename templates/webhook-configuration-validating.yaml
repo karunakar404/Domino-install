@@ -1,0 +1,58 @@
+{{- if .Values.webhook.enabled }}
+{{- $serviceName := include "po.webhook.service" . -}}
+{{- $altNames := list ( printf "%s.%s" $serviceName (include "po.namespace" .) ) ( printf "%s.%s.svc" $serviceName (include "po.namespace" .) ) -}}
+{{- $ca := genCA "custom-platform-operator-ca" 365 -}}
+{{- $cert := genSignedCert $serviceName nil $altNames 365 $ca -}}
+
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  {{- if .Values.webhook.certManager }}
+  annotations:
+    {{- include "po.webhook.annotations" . | nindent 4 }}
+  {{- end }}
+  name: {{ include "common.fullname" . }}-validating-webhook-configuration
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "common.labels.component" "platform-operator" | nindent 4 }}
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    {{- if not .Values.webhook.certManager }}
+    caBundle: '{{ $ca.Cert | b64enc }}'
+    {{- end }}
+    service:
+      name: {{ include "po.webhook.service" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-operator-domino-ai-v1beta1-domino
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: vpolicy.domino.operator.x-k8s.io
+  rules:
+  - apiGroups:
+    - operator.domino.ai
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - dominos
+  sideEffects: None
+---
+{{- if not .Values.webhook.certManager }}
+apiVersion: v1
+data:
+  ca.crt: '{{ $ca.Cert | b64enc }}'
+  tls.crt: '{{ $cert.Cert | b64enc }}'
+  tls.key: '{{ $cert.Key | b64enc }}'
+kind: Secret
+metadata:
+  name: {{ include "po.webhook.secret" . }}
+  namespace: {{ .Release.Namespace }}
+type: kubernetes.io/tls
+{{- end }}
+
+{{- end }}

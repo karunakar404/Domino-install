@@ -1,0 +1,31 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "common.fullname" . }}-manager-rolebinding
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "common.labels.component" "platform-operator" | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "common.fullname" . }}-manager-role
+subjects:
+- kind: ServiceAccount
+  name: {{ include "po.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "common.fullname" . }}-reconciler-rolebinding
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "common.labels.component" "platform-operator" | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "common.fullname" . }}-reconciler-role
+subjects:
+- kind: ServiceAccount
+  name: {{ include "po.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
