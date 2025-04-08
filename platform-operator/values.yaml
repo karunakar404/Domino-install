@@ -1,2 +1,14 @@
+global:
+  environment: dev
+  cloud: aws
+  aws:
+    region: us-east-1
+
+license:
+  accept: true
+
 webhook:
+  enabled: true
+
+ingress:
   enabled: true
