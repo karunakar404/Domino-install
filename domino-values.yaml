@@ -10,6 +10,5 @@ ingress:
 license:
   accept: true
 
-agent:
-  repository: quay.io/domino/agent
-  version: "6.0.3"
+webhook:
+  enabled: true
