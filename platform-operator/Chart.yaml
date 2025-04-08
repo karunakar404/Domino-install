@@ -1,0 +1,13 @@
+apiVersion: v2
+appVersion: 0.4.4
+dependencies:
+- name: commonlib
+  repository: oci://gcr.io/domino-eng-service-artifacts
+  version: 0.13.17
+description: A Helm chart for the Domino platform-operator
+home: https://github.com/cerebrotech/platform-operator/helm
+name: platform-operator
+sources:
+- https://github.com/cerebrotech/platform-operator
+type: application
+version: 0.4.4
